@@ -50,13 +50,22 @@ async def health_check():
     return {"status": "ok", "service": "TaskBot API"}
 
 
-# Статика для Mini App (production: раздаём собранный dist/)
-webapp_dist = Path(__file__).parent.parent / "webapp_dist"
-if webapp_dist.exists():
-    print(f"📁 Служу статику из: {webapp_dist}")
-    app.mount("/", StaticFiles(directory=webapp_dist, html=True), name="webapp")
-else:
-    print("⚠️ webapp_dist не найден - фронтенд недоступен")
+# Статика для Mini App (production: проверяем несколько местоположений)
+# Возможные варианты раздачи статики:
+# - webapp_dist/ (копия собранного фронтенда из webapp2 -> deploy_railway/webapp_dist)
+# - webapp/dist (стандартный путь для старого webapp)
+# - webapp/ (dev fallback)
+webapp_dist_candidates = [
+    Path(__file__).parent.parent / "webapp_dist",
+    Path(__file__).parent.parent / "webapp" / "dist",
+    Path(__file__).parent.parent / "webapp",
+]
+
+for candidate in webapp_dist_candidates:
+    if candidate.exists():
+        print(f"📁 Служу статику из: {candidate}")
+        app.mount("/", StaticFiles(directory=candidate, html=True), name="webapp")
+        break
 
 
 # Для запуска напрямую
